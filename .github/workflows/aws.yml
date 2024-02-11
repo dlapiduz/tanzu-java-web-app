@@ -76,12 +76,7 @@ jobs:
     - name: Pack Remote Build
       uses: dfreilich/pack-action@v2.1.1
       with:
-        args: 'build ${{ env.IMG_NAME }} --builder paketobuildpacks/builder-jammy-base --publish'
-
-    - name: Pack Download SBOM
-      uses: dfreilich/pack-action@v2.1.1
-      with:
-        args: 'sbom download ${{ env.IMG_NAME }} --output-dir /tmp/sbom'
+        args: 'build ${{ env.IMG_NAME }} --builder paketobuildpacks/builder-jammy-base --publish --sbom-output-dir /tmp/sbom'
   
     - name: Compress SBOM
       run: |
