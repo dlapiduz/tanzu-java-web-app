@@ -74,7 +74,7 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
          echo "IMG_NAME=$(echo ${ECR_REGISTRY})/amrpoc-ecr" >> $GITHUB_ENV
-         export RELATIVE_IMAGE=$(git rev-parse --short HEAD)-$GITHUB_RUN_ID
+         export RELATIVE_IMAGE=$(git rev-parse --short HEAD)$GITHUB_RUN_ID
          echo "relative_image=$RELATIVE_IMAGE" >> $GITHUB_OUTPUT
          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$RELATIVE_IMAGE" >> $GITHUB_OUTPUT
 
