@@ -74,7 +74,7 @@ jobs:
          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:latest" >> $GITHUB_OUTPUT
 
     - name: Pack Remote Build
-      uses: dfreilich/pack-action@v2
+      uses: dfreilich/pack-action@v2.1.1
       with:
         args: 'build ${{ env.IMG_NAME }} --builder paketobuildpacks/builder-jammy-base --publish'
 
