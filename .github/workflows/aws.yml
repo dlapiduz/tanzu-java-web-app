@@ -106,11 +106,15 @@ jobs:
         with:
           name: sbom
 
+      - name: Set Destination
+        id: set-destination
+        run: echo "dest=s3://$AWS_BUCKET/sboms/sbom-$GITHUB_SHA-$GITHUB_RUN_ID.tar.gz" >> $GITHUB_OUTPUT
+
       - uses: keithweaver/aws-s3-github-action@v1.0.0
         with:
           command: cp
           source: sbom.tar.gz
-          destination: "s3://$AWS_BUCKET/sboms/sbom-$GITHUB_SHA-$GITHUB_RUN_ID.tar.gz"
+          destination: ${{ steps.set-destination.outputs.dest }}
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws_session_token: ${{ secrets.AWS_SESSION_TOKEN }}
