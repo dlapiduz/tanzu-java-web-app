@@ -81,7 +81,7 @@ jobs:
     - name: Pack Remote Build
       uses: dfreilich/pack-action@v2.1.1
       with:
-        args: 'build ${{ env.IMG_NAME }} --builder paketobuildpacks/builder-jammy-base --publish'
+        args: 'build ${{ env.IMG_NAME }} --builder paketobuildpacks/builder-jammy-base --publish -t ${{ steps.set-app-name.outputs.image }}'
   
 
   syft:
