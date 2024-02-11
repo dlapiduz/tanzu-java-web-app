@@ -103,3 +103,22 @@ jobs:
         service: ${{ env.ECS_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
         wait-for-service-stability: true
+
+
+  upload-sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download sbom
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom
+      - uses: keithweaver/aws-s3-github-action@v1.0.0
+        with:
+          command: cp
+          source: sbom.tar.gz
+          destination: s3://${{ env.AWS_BUCKET }}/sboms/sbom-${{ env.GITHUB_SHA }}-${{ env.GITHUB_RUN_ID }}.tar.gz
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_session_token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws_region: ${{ env.AWS_REGION }}
+          flags: "--acl private"
