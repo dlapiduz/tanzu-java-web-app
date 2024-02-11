@@ -71,7 +71,7 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
          echo "IMG_NAME=$(echo ${ECR_REGISTRY})/amrpoc-ecr" >> $GITHUB_ENV
-         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:latest" >> $GITHUB_OUTPUT
+         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:${{ env.GITHUB_SHA }}-${{ env.GITHUB_RUN_ID }}" >> $GITHUB_OUTPUT
 
     - name: Pack Remote Build
       uses: dfreilich/pack-action@v2.1.1
