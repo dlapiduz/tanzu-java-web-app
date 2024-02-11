@@ -44,10 +44,13 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
-    name: Deploy
+  create-image:
+    name: Create Image
     runs-on: ubuntu-latest
     environment: production
+
+    outputs:
+      image-name: ${{ steps.set-app-name.outputs.image }}
 
     steps:
     - name: Checkout
@@ -88,26 +91,10 @@ jobs:
         name: sbom
         path: sbom.tar.gz
 
-    - name: Fill in the new image ID in the Amazon ECS task definition
-      id: task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      with:
-        task-definition: ${{ env.ECS_TASK_DEFINITION }}
-        container-name: ${{ env.CONTAINER_NAME }}
-        image: ${{ steps.set-app-name.outputs.image }}
-
-    - name: Deploy Amazon ECS task definition
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: ${{ env.ECS_SERVICE }}
-        cluster: ${{ env.ECS_CLUSTER }}
-        wait-for-service-stability: true
-
 
   upload-sbom:
     runs-on: ubuntu-latest
-    needs: deploy
+    needs: create-image
     steps:
       - name: Download sbom
         uses: actions/download-artifact@v4
@@ -123,3 +110,26 @@ jobs:
           aws_session_token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws_region: ${{ env.AWS_REGION }}
           flags: "--acl private"
+
+  deploy-ecs:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    environment: production
+    needs: create-image
+
+    steps:
+    - name: Fill in the new image ID in the Amazon ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: ${{ env.ECS_TASK_DEFINITION }}
+        container-name: ${{ env.CONTAINER_NAME }}
+        image: ${{ needs.create-image.outputs.image-name }}
+
+    - name: Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: ${{ env.ECS_SERVICE }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
