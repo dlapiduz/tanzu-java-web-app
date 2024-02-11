@@ -81,30 +81,34 @@ jobs:
     - name: Pack Remote Build
       uses: dfreilich/pack-action@v2.1.1
       with:
-        args: 'build ${{ env.IMG_NAME }} --builder paketobuildpacks/builder-jammy-base --publish --sbom-output-dir /tmp/sbom'
+        args: 'build ${{ env.IMG_NAME }} --builder paketobuildpacks/builder-jammy-base --publish'
   
-    - name: Compress SBOM
-      run: |
-         tar czvf sbom.tar.gz /tmp/sbom
 
-    - name: Upload sbom as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: sbom
-        path: sbom.tar.gz
-
-
-  upload-sbom:
-    name: "Upload SBOM to S3"
+  syft:
+    name: "Syft Image and upload to S3"
     runs-on: ubuntu-latest
     needs: create-image
     environment: production
 
     steps:
-      - name: Download sbom
-        uses: actions/download-artifact@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          name: sbom
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Run Syft
+        uses: anchore/sbom-action@v0
+        with:
+          image: "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ needs.create-image.outputs.relative_image }}"
+          output-file: "sbom-${{ needs.create-image.outputs.relative_image }}.cdx.json"
+          format: "cyclonedx-json"
 
       - name: Set Destination
         id: set-destination
@@ -113,7 +117,7 @@ jobs:
       - uses: keithweaver/aws-s3-github-action@v1.0.0
         with:
           command: cp
-          source: sbom.tar.gz
+          source: "sbom-${{ needs.create-image.outputs.relative_image }}.cdx.json"
           destination: ${{ steps.set-destination.outputs.dest }}
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
