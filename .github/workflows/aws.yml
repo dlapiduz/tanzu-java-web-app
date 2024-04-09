@@ -97,6 +97,8 @@ jobs:
     environment: production
 
     steps:
+      - id: setup-tools
+        uses: buildpacks/github-actions/setup-tools@v5.1.0
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -113,23 +115,34 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ needs.create-image.outputs.relative_image }}"
-          output: "sbom-${{ needs.create-image.outputs.relative_image }}.cdx.json"
+          output: "sbom.cdx.json"
           format: "cyclonedx"
 
-      - name: Set Destination
-        id: set-destination
-        run: echo "dest=s3://${{ vars.AWS_BUCKET }}/sboms/sbom-$GITHUB_SHA-$GITHUB_RUN_ID.tar.gz" >> $GITHUB_OUTPUT
 
-      - uses: keithweaver/aws-s3-github-action@v1.0.0
-        with:
-          command: cp
-          source: "sbom-${{ needs.create-image.outputs.relative_image }}.cdx.json"
-          destination: ${{ steps.set-destination.outputs.dest }}
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_session_token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws_region: ${{ env.AWS_REGION }}
-          flags: "--acl private"
+      - name: Upload to AMR
+        id: upload-amr
+        run: |
+          export digest=$(crane digest "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ needs.create-image.outputs.relative_image }}")
+
+          export access_token=$(curl -w'\n' -X POST ${{ env.CSP_URL }}/csp/gateway/am/api/auth/api-tokens/authorize \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "refresh_token=${{ env.CSP_API_TOKEN }}" | jq ".access_token" -r)
+        
+          curl -w'\n' -X POST ${{ env.CEH_URL}} \
+            -H "Authorization: Bearer ${access_token}" \
+            -H "ce-id: ${{ gihub.sha }}" \
+            -H "ce-specversion: 1.0" \
+            -H "ce-type: vmware.tanzu.apps.scan.sbom.pushed.v1" \
+            -H "ce-source: bash-script" \
+            -H "ce-batchid: abc1338" \
+            -H "ce-sbomname: sbom.cdx.json" \
+            -H "ce-project: default" \
+            -H "ce-correlationid: unknown" \
+            -H "ce-artifactdigest: image:$digest" \
+            -H "Content-Type: application/vnd.cyclonedx+json; version=1.5" \
+            -d @sbom.cdx.json  -i         
+
 
   deploy-ecs:
     name: Deploy to ECS
