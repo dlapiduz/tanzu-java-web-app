@@ -121,15 +121,19 @@ jobs:
 
       - name: Upload to AMR
         id: upload-amr
+        env:
+          csp-url: ${{ env.CSP_URL }}
+          csp-api-token: ${{ env.CSP_API_TOKEN }}
+          ceh-url: ${{ env.CEH_URL }}
         run: |
           export digest=$(crane digest "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ needs.create-image.outputs.relative_image }}")
 
-          export access_token=$(curl -w'\n' -X POST ${{ env.CSP_URL }}/csp/gateway/am/api/auth/api-tokens/authorize \
+          export access_token=$(curl -w'\n' -X POST ${csp-url}/csp/gateway/am/api/auth/api-tokens/authorize \
             -H "Accept: application/json" \
             -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "refresh_token=${{ env.CSP_API_TOKEN }}" | jq ".access_token" -r)
+            -d "refresh_token=${csp-api-token}" | jq ".access_token" -r)
         
-          curl -w'\n' -X POST ${{ env.CEH_URL}} \
+          curl -w'\n' -X POST ${ ceh-url } \
             -H "Authorization: Bearer ${access_token}" \
             -H "ce-id: ${{ github.sha }}" \
             -H "ce-specversion: 1.0" \
