@@ -131,7 +131,7 @@ jobs:
         
           curl -w'\n' -X POST ${{ env.CEH_URL}} \
             -H "Authorization: Bearer ${access_token}" \
-            -H "ce-id: ${{ gihub.sha }}" \
+            -H "ce-id: ${{ github.sha }}" \
             -H "ce-specversion: 1.0" \
             -H "ce-type: vmware.tanzu.apps.scan.sbom.pushed.v1" \
             -H "ce-source: bash-script" \
