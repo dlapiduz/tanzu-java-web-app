@@ -128,13 +128,13 @@ jobs:
         run: |
           export digest=$(crane digest "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ needs.create-image.outputs.relative_image }}")
 
-          export access_token=$(curl -w'\n' -X POST ${{ vars.CSP_URL }}/csp/gateway/am/api/auth/api-tokens/authorize \
+          export TOKEN=$(curl -w'\n' -X POST ${{ vars.CSP_URL }}/csp/gateway/am/api/auth/api-tokens/authorize \
             -H "Accept: application/json" \
             -H "Content-Type: application/x-www-form-urlencoded" \
             -d "refresh_token=${{ vars.CSP_API_TOKEN }}" | jq ".access_token" -r)
         
           curl -w'\n' -X POST ${{ vars.CEH_URL }} \
-            -H "Authorization: Bearer $(access_token)" \
+            -H "Authorization: Bearer $TOKEN" \
             -H "ce-id: ${{ github.sha }}" \
             -H "ce-specversion: 1.0" \
             -H "ce-type: vmware.tanzu.apps.scan.sbom.pushed.v1" \
