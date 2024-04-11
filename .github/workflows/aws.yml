@@ -131,7 +131,7 @@ jobs:
           export TOKEN=$(curl -w'\n' -X POST ${{ vars.CSP_URL }}/csp/gateway/am/api/auth/api-tokens/authorize \
             -H "Accept: application/json" \
             -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "refresh_token=${{ vars.CSP_API_TOKEN }}" | jq ".access_token" -r)
+            -d "refresh_token=${{ secrets.CSP_API_TOKEN }}" | jq ".access_token" -r)
         
           curl -w'\n' -X POST ${{ vars.CEH_URL }} \
             -H "Authorization: Bearer $TOKEN" \
